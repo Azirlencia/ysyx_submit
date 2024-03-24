@@ -1,5 +1,5 @@
-STUID = ysyx_22040000
-STUNAME = 张三
+STUID = 2023234276
+STUNAME = Mi Yunhao
 
 # DO NOT modify the following code!!!
 
