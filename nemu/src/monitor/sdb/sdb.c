@@ -17,6 +17,8 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <memory/paddr.h>
+#include "watchpoint.h"
 #include "sdb.h"
 
 static int is_batch_mode = false;
@@ -49,20 +51,96 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
+  nemu_state.state = NEMU_QUIT;
   return -1;
 }
 
 static int cmd_help(char *args);
+
+/* cmd_si*/
+static int cmd_si(char *args){
+    int step = 0;
+    if(args == NULL)
+        step = 1;
+    else
+        sscanf(args,"%d",&step);
+    cpu_exec(step);
+    //printf("Step excute N=%s\n",step);
+    return 0;
+}
+
+/* cmd_info*/
+static int cmd_info(char *args){
+  if(args == NULL){
+    printf("wrong reg.");
+  }
+  else if(strcmp(args, "r") == 0){
+    isa_reg_display();
+  }
+  else if(strcmp(args, "w") == 0){
+    print_watchpoint();
+  }
+  return 0;
+}
+
+static int cmd_x(char *args){
+    char* n = strtok(args," ");
+    char* baseaddr = strtok(NULL," ");
+    int len = 0;
+    paddr_t addr = 0;
+    sscanf(n, "%d", &len);
+    sscanf(baseaddr,"%x", &addr);
+    for(int i = 0 ; i < len ; i ++)
+    {
+        printf("%x\n",paddr_read(addr,4));
+        addr = addr + 4;
+    }
+    return 0;
+}
+
+static int cmd_p(char *args){
+	if(args == NULL){
+		printf("Empty input.");
+		return 0;
+	}
+	bool success  = false;
+	uint32_t v = expr(args, &success);
+	if (success) {
+    	printf("\e[1;36m%u\e[0m\n", v);
+  	}
+	return 0;
+};
+
+static int cmd_w(char *args){
+  creat_watchpoint(args);
+  return 0;
+}
+
+static int cmd_d(char *args){
+  if(args == NULL){
+    printf("Null input.\n");
+  }
+  else{
+    delete_watchpoint(atoi(args));
+  }
+  return 0;
+}
 
 static struct {
   const char *name;
   const char *description;
   int (*handler) (char *);
 } cmd_table [] = {
+  
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "Single step for N instructions (default N is 1)", cmd_si },
+  { "info", "Print regs.", cmd_info },
+  { "x", "scan memory.", cmd_x },
+  { "p", "expression evaluation", cmd_p},
+  { "w", "Add a watchpoint.", cmd_w},
+  { "d", "Delete a watchpoint.", cmd_d}
   /* TODO: Add more commands */
 
 };
