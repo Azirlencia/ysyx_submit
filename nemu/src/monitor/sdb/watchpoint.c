@@ -50,13 +50,19 @@ WP* new_wp(){
     printf("Invalid watch point.\n");
     assert(0);
   }
-  WP* wp = free_;
-  free_ = free_ -> next;
-  wp -> flag = true;
-  if (head == NULL) {
-        head = wp;
+  for(WP* p = free_ ; p -> next != NULL ; p = p -> next){
+    if( p -> flag == false){
+      p -> flag = true;
+      if(head == NULL){
+        head = p;
+      }
+      return p;
+    }
   }
-  return wp;
+    printf("Full watchpoint\n");
+    assert(0);
+    return NULL;
+
 }
 
 void free_wp(WP* wp){
@@ -64,13 +70,22 @@ void free_wp(WP* wp){
     printf("Attempt to free a null watchpoint.\n");
     assert(0);
   }
-  wp -> flag = false;
-  wp->next = free_;
-  free_ = wp;
-  if (head == wp) {
-        head = NULL; 
+  if(head -> NO == wp -> NO){
+    head -> flag = false;
+    head = NULL;
+    printf("Delete watchpoint  success.\n");
+    return ;
     }
+  for(WP* p = head ; p -> next != NULL ; p = p -> next){
+    if(p -> next -> NO  == wp -> NO){
+        p -> next = p -> next -> next;
+        p -> next -> flag = false; 
+        printf("free succes.\n");
+        return ;
+    }
+  }
 }
+
 
 void print_watchpoint(){
   bool flag = true;
@@ -90,8 +105,10 @@ void delete_watchpoint(int a){
   for(int i = 0 ; i < NR_WP ; i ++){
     if(wp_pool[i].NO == a){
       free_wp(&wp_pool[i]);
+      printf("Delete watchpoint  success.\n");
       return ;
     }
+    
   }
 }    
 

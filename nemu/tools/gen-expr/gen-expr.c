@@ -30,6 +30,7 @@ static char *code_format =
 "  printf(\"%%u\", result); "
 "  return 0; "
 "}";
+size_t index_buf = 0;
 
 uint32_t choose(uint32_t n){
 	uint32_t x = rand() % 3;
@@ -37,9 +38,11 @@ uint32_t choose(uint32_t n){
 }
 
 void gen(char c){
-    buf[index_buf ++] = c;
+    if(index_buf < sizeof(buf) - 1) { // check buffer
+        buf[index_buf++] = c;
+    }
 }
-
+/*
 void gen_num(){
 	int num = rand() % 100;
 	if(num == 0){
@@ -51,6 +54,21 @@ void gen_num(){
     	buf[index_buf++] = c;
     	num /= 10;
     }while(num != 0);
+}
+*/
+void gen_num() {
+    int num = rand() % 100;
+    if (num == 0) {
+        buf[index_buf++] = '0';
+    } else {
+        while (num > 0) {
+            char c = (num % 10) + '0';
+            if (index_buf < sizeof(buf)) {
+                buf[index_buf++] = c;
+            }
+            num /= 10;
+        }
+    }
 }
 
 void gen_rand_op(){

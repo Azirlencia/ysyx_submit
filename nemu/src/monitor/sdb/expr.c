@@ -55,6 +55,7 @@ static struct rule {
   {"\\&\\&", AND},  //and
   {"\\!", '!'},  //not
   {"\\$[a-zA-Z]*[0-9]*", REG},  //register
+  {"0x[0-9A-Fa-f]+", HEX},
   {"[0-9]*", NUM}  //number
 };
 
@@ -136,7 +137,7 @@ static bool make_token(char *e) {
               || tokens[nr_token - 1].type == REG){
               tokens[nr_token].type = rules[i].token_type;
             }else {
-              IFDEF(CONFIG_DEBUG, Log("遇到了%#x作为前缀", tokens[i - 1].type));
+              IFDEF(CONFIG_DEBUG, Log("face%#xin front", tokens[i - 1].type));
               assert(0);
             }
             nr_token++;
@@ -148,7 +149,7 @@ static bool make_token(char *e) {
           case HEX:
           case REG:
             memcpy(tokens[nr_token].str, e + position - substr_len, (substr_len) * sizeof(char));
-            tokens[nr_token].str[substr_len] = '\0';
+            tokens[nr_token].str[substr_len] = '\0'; 
           default: 
             tokens[nr_token].type = rules[i].token_type;
             nr_token++;
@@ -282,10 +283,6 @@ word_t eval(uint32_t p, uint32_t q, bool *success, int *position) {
   		return -1;
   	}
   	else if (p == q) {
-    /* Single token.
-     * For now this token should be a number.
-     * Return the value of the number.
-     */	
 		uint32_t tmp = 0;
     	switch (tokens[p].type){
     		case HEX:
@@ -307,13 +304,15 @@ word_t eval(uint32_t p, uint32_t q, bool *success, int *position) {
 
       			if (!*success){
         			*position = p;
+              printf("A failure happens at reg print at %ls.",position);
         			return 0;
-					printf("A failure happens at a single token.");
+					
       			}
      			break;
 
     		default:
-      			assert(0);
+          printf("A failure happens at a single token.");
+      		assert(0);
   		}
 		return tmp;
 	}
@@ -353,12 +352,12 @@ word_t eval(uint32_t p, uint32_t q, bool *success, int *position) {
 					op = i; // Find the operator with the lowest priority
 				}
 			}
-    	}
+    }
 
     
-    	uint32_t op_type = tokens[op].type;
-    	uint32_t val1 = eval(p, op - 1, success, position);
-		uint32_t val2 = eval(op + 1, q, success, position);
+  uint32_t op_type = tokens[op].type;
+  uint32_t val1 = eval(p, op - 1, success, position);
+	uint32_t val2 = eval(op + 1, q, success, position);
 /*
 	{" +", TK_NOTYPE},    // spaces
   	{"\\+", '+'},         // plus
@@ -375,19 +374,24 @@ word_t eval(uint32_t p, uint32_t q, bool *success, int *position) {
   	{"\\$[a-zA-Z]*[0-9]*", REG},  //register
   	{"[0-9]*", NUM}  //number
 */
-    	switch (op_type) {
-      		case '+': return val1 + val2;
-      		case '-': return val1 - val2;
-      		case '*': return val1 * val2;
-      		case '/': return val1 / val2;
-			//expansion
-			case TK_EQ: return val1 == val2;
-      		case TK_NEQ: return val1 != val2;
-      		case OR: return val1 || val2;
-      		case AND: return val1 && val2;
-      		default: 
-				printf("A failure happens at calculation.");
-				assert(0);
+  switch (op_type) {
+    case '+': return val1 + val2;
+    case '-': return val1 - val2;
+    case '*': return val1 * val2;
+    case '/': if  (val2 == 0) {
+      success = false;
+      printf("Div zero error.");
+      return 0;
+    }
+    return val1 / val2;
+		//expansion
+		case TK_EQ: return val1 == val2;
+    case TK_NEQ: return val1 != val2;
+    case OR: return val1 || val2;
+    case AND: return val1 && val2;
+    default: 
+			printf("A failure happens at calculation.");
+			assert(0);
 				
 				
   		}
